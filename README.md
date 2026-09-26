@@ -65,8 +65,8 @@ A full-featured food journal application with a map-first interface. Track place
 
 1. **Clone and install dependencies:**
    ```bash
-   git clone https://github.com/Tamlica/food-journal-mapcn.git
-   cd food-journal-map
+   git clone https://github.com/Tamlica/makanmap.git
+   cd makanmap
    npm install
    ```
 
@@ -104,7 +104,7 @@ npm run start
 ## Project Structure
 
 ```
-food-journal-map/
+makanmap/
 ├── app/                           # Next.js app directory
 │   ├── layout.tsx                # Root layout
 │   ├── page.tsx                  # Main page with map, filters, forms
