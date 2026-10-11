@@ -22,11 +22,13 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { STATUS_STYLE } from "@/lib/constants/food-journal";
 import { formatIdr } from "@/lib/format";
 import { getTagMap } from "@/lib/food-journal-utils";
-import type { JournalTag, Place } from "@/lib/types/food-journal";
+import type { CollectionMember, JournalTag, Place } from "@/lib/types/food-journal";
 
 type PlaceDetailPanelProps = {
   place: Place | null;
   tags: JournalTag[];
+  /** Other members' status/rating for this place; only relevant when place.collectionId is set. */
+  collectionMembers?: CollectionMember[];
   /** Omit onEdit/onDelete to render the panel read-only (public page). */
   onEdit?: (place: Place) => void;
   onDelete?: (placeId: string) => void;
@@ -41,6 +43,7 @@ type PlaceDetailPanelProps = {
 export function PlaceDetailPanel({
   place,
   tags,
+  collectionMembers = [],
   onEdit,
   onDelete,
   onDeleteImage,
@@ -151,6 +154,33 @@ export function PlaceDetailPanel({
             <p className="break-words rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground">
               {place.notes}
             </p>
+          </div>
+        ) : null}
+
+        {place.collectionId && place.memberStatuses.length > 0 ? (
+          <div>
+            <p className="mb-1 text-xs text-muted-foreground">Members</p>
+            <ul className="flex flex-col gap-1.5">
+              {place.memberStatuses.map((memberStatus) => {
+                const member = collectionMembers.find((m) => m.userId === memberStatus.userId);
+                const memberStatusStyle = STATUS_STYLE[memberStatus.status];
+                return (
+                  <li
+                    key={memberStatus.userId}
+                    className="flex items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs"
+                  >
+                    <span className="inline-flex items-center gap-1.5 text-foreground">
+                      <span className={`inline-block size-2 rounded-full ${memberStatusStyle.dotClassName}`} />
+                      {member?.displayName ?? member?.username ?? "Member"}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {memberStatusStyle.label}
+                      {memberStatus.rating ? ` · ${memberStatus.rating.toFixed(1)}★` : ""}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         ) : null}
 

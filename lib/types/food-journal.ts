@@ -2,6 +2,8 @@ export type PlaceStatus = "visited" | "want_to_go" | "avoid";
 
 export type PriceRange = number;
 
+export type MembershipStatus = "pending" | "active";
+
 export type JournalTag = {
   id: string;
   name: string;
@@ -9,10 +11,32 @@ export type JournalTag = {
   createdAt: string;
 };
 
+export type Collection = {
+  id: string;
+  name: string;
+  ownerId: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CollectionMember = {
+  userId: string;
+  username: string;
+  displayName: string | null;
+  status: MembershipStatus;
+};
+
+export type PlaceMemberStatus = {
+  userId: string;
+  status: PlaceStatus;
+  rating: number | null;
+};
+
 export type Place = {
   id: string;
   name: string;
   notes: string | null;
+  /** The current user's own status/rating (place_user_status). */
   status: PlaceStatus;
   rating: number | null;
   priceRange: PriceRange | null;
@@ -23,6 +47,9 @@ export type Place = {
   imageUrl?: string | null;
   tagIds: string[];
   isPublic: boolean;
+  collectionId: string | null;
+  /** Every member's status/rating; empty unless collectionId is set. */
+  memberStatuses: PlaceMemberStatus[];
   createdAt: string;
   updatedAt: string;
 };
@@ -47,6 +74,7 @@ export type CreatePlaceInput = {
   longitude: number;
   tagIds?: string[];
   isPublic?: boolean;
+  collectionId?: string | null;
   imageFiles?: File[];
   /** Edit only: existing image URLs to keep. Omit to leave the current images untouched. */
   keepImageUrls?: string[];

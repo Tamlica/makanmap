@@ -136,6 +136,8 @@ export async function fetchPublicJournal(
       notes: null,
       imageUrl: place.imageUrls[0] ?? null,
       isPublic: true,
+      collectionId: null,
+      memberStatuses: [],
       createdAt: "",
       updatedAt: "",
     })),

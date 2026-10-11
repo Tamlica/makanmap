@@ -21,12 +21,15 @@ import type {
   PlaceStatus,
   PriceRange,
 } from "@/lib/types/food-journal";
+import type { MyCollection } from "@/lib/supabase/collection-queries";
 
 type PlaceFormProps = {
   title: string;
   tags: JournalTag[];
+  collections: MyCollection[];
   initialPlace?: Place | null;
   initialCoordinates?: { latitude: number; longitude: number } | null;
+  defaultCollectionId?: string | null;
   onSubmit: (value: CreatePlaceInput) => Promise<void>;
   onCreateTag: (value: { name: string; color: string }) => Promise<void>;
   onCancel: () => void;
@@ -53,8 +56,10 @@ const MAX_IMAGE_SIZE_BYTES = 20 * 1024 * 1024;
 export function PlaceForm({
   title,
   tags,
+  collections,
   initialPlace,
   initialCoordinates,
+  defaultCollectionId,
   onSubmit,
   onCreateTag,
   onCancel,
@@ -82,6 +87,9 @@ export function PlaceForm({
   });
   const [tagIds, setTagIds] = useState<string[]>(initialPlace?.tagIds ?? []);
   const [isPublic, setIsPublic] = useState(initialPlace?.isPublic ?? false);
+  const [collectionId, setCollectionId] = useState<string | null>(
+    initialPlace ? initialPlace.collectionId : defaultCollectionId ?? null
+  );
   const [latitudeText, setLatitudeText] = useState(initialLatitude != null ? String(initialLatitude) : "");
   const [longitudeText, setLongitudeText] = useState(initialLongitude != null ? String(initialLongitude) : "");
   const [coordinateError, setCoordinateError] = useState<string | null>(null);
@@ -163,6 +171,7 @@ export function PlaceForm({
       longitude: resolvedCoordinates.longitude,
       tagIds,
       isPublic,
+      collectionId,
       imageFiles: imageFiles.length > 0 ? imageFiles : undefined,
       keepImageUrls: initialPlace ? keptImageUrls : undefined,
     });
@@ -597,6 +606,24 @@ export function PlaceForm({
           </div>
         ) : null}
       </div>
+
+      {collections.length > 0 && (
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">Collection</label>
+          <select
+            value={collectionId ?? ""}
+            onChange={(event) => setCollectionId(event.target.value || null)}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background transition focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="">Personal</option>
+            {collections.map((collection) => (
+              <option key={collection.id} value={collection.id}>
+                {collection.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <label className="flex items-start gap-2 text-sm text-foreground">
         <input

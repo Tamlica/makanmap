@@ -5,11 +5,14 @@ import { useRouter } from "next/navigation";
 import { Filter, Plus, Search, X } from "lucide-react";
 
 import { AccountMenu } from "@/components/account/account-menu";
+import { CollectionSwitcher } from "@/components/collections/collection-switcher";
+import { PendingInvitesBanner } from "@/components/collections/pending-invites-banner";
 import { PlaceMap } from "@/components/map/place-map";
 import { FilterPanel } from "@/components/place/filter-panel";
 import { PlaceDetailPanel } from "@/components/place/place-detail-panel";
 import { PlaceForm } from "@/components/place/place-form";
 import { filterPlaces } from "@/lib/food-journal-utils";
+import { useCollectionsStore } from "@/lib/stores/use-collections-store";
 import { useFoodJournalStore } from "@/lib/stores/use-food-journal-store";
 import { useMapUiStore } from "@/lib/stores/use-map-ui-store";
 import { loadGoogleMapsPlaces } from "@/lib/hooks/use-google-places";
@@ -70,6 +73,12 @@ export default function Home() {
     updateDraftCoordinates,
   } = useMapUiStore();
 
+  const collections = useCollectionsStore((state) => state.collections);
+  const activeCollectionId = useCollectionsStore((state) => state.activeCollectionId);
+  const membersByCollection = useCollectionsStore((state) => state.membersByCollection);
+  const hydrateCollections = useCollectionsStore((state) => state.hydrate);
+  const loadCollectionMembers = useCollectionsStore((state) => state.loadMembers);
+
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -83,7 +92,8 @@ export default function Home() {
 
   useEffect(() => {
     void hydrate();
-  }, [hydrate]);
+    void hydrateCollections();
+  }, [hydrate, hydrateCollections]);
 
   useEffect(() => {
     loadGoogleMapsPlaces()
@@ -107,9 +117,14 @@ export default function Home() {
     [editingPlace, draftCoordinates]
   );
 
+  const scopedPlaces = useMemo(
+    () => places.filter((place) => place.collectionId === activeCollectionId),
+    [places, activeCollectionId]
+  );
+
   const filteredPlaces = useMemo(
-    () => filterPlaces(places, filters),
-    [places, filters]
+    () => filterPlaces(scopedPlaces, filters),
+    [scopedPlaces, filters]
   );
 
   const selectedPlace = useMemo(
@@ -122,6 +137,16 @@ export default function Home() {
       closeDetail();
     }
   }, [selectedPlace, isDetailOpen, closeDetail]);
+
+  useEffect(() => {
+    if (selectedPlace?.collectionId) {
+      void loadCollectionMembers(selectedPlace.collectionId);
+    }
+  }, [selectedPlace?.collectionId, loadCollectionMembers]);
+
+  const selectedPlaceMembers = selectedPlace?.collectionId
+    ? membersByCollection[selectedPlace.collectionId] ?? []
+    : [];
 
   const handleSearchChange = useCallback((value: string) => {
     setSearchValue(value);
@@ -275,6 +300,7 @@ export default function Home() {
     latitude: number;
     longitude: number;
     tagIds?: string[];
+    collectionId?: string | null;
     imageFiles?: File[];
     keepImageUrls?: string[];
   }) => {
@@ -384,6 +410,7 @@ export default function Home() {
                 ? "Checking Supabase"
                 : "Supabase disconnected"}
           </div> */}
+          <CollectionSwitcher />
           <AccountMenu onSignOut={handleSignOut} isSigningOut={isSigningOut} />
         </div>
 
@@ -404,8 +431,11 @@ export default function Home() {
                 ? "Checking Supabase"
                 : "Supabase disconnected"}
           </div> */}
+          <CollectionSwitcher />
           <AccountMenu onSignOut={handleSignOut} isSigningOut={isSigningOut} />
         </div>
+
+        <PendingInvitesBanner />
 
         <div className="pointer-events-auto absolute left-3 top-18">
           <button
@@ -443,6 +473,7 @@ export default function Home() {
             <PlaceDetailPanel
               place={selectedPlace}
               tags={tags}
+              collectionMembers={selectedPlaceMembers}
               onClose={closeDetail}
               onDeleteImage={handleDeleteImage}
               onDelete={(placeId) => {
@@ -474,6 +505,8 @@ export default function Home() {
               key={placeFormKey}
               title={editingPlace ? "Edit Place" : "Add Place"}
               tags={tags}
+              collections={collections.filter((c) => c.myStatus === "active")}
+              defaultCollectionId={activeCollectionId}
               initialPlace={editingPlace}
               initialCoordinates={draftCoordinates}
               onSubmit={handleSubmitPlace}
@@ -511,6 +544,8 @@ export default function Home() {
                   key={placeFormKey}
                   title={editingPlace ? "Edit Place" : "Add Place"}
                   tags={tags}
+                  collections={collections.filter((c) => c.myStatus === "active")}
+                  defaultCollectionId={activeCollectionId}
                   initialPlace={editingPlace}
                   initialCoordinates={draftCoordinates}
                   onSubmit={handleSubmitPlace}
@@ -531,6 +566,7 @@ export default function Home() {
             <PlaceDetailPanel
               place={selectedPlace}
               tags={tags}
+              collectionMembers={selectedPlaceMembers}
               onClose={closeDetail}
               onDeleteImage={handleDeleteImage}
               onDelete={(placeId) => {
